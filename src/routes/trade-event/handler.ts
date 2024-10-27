@@ -9,33 +9,49 @@ export async function tradeEventHandler(
   const { tradovate } = request.server as { tradovate: TradovateClient };
 
   if (!tradovate) {
-    void reply.status(500).send({ error: 'Tradovate client not initialized' });
+    await reply.status(500).send({ error: 'Tradovate client not initialized' });
     return;
   }
 
   try {
     const eventData = request.body as {
-      symbol: string;
-      side: string;
-      quantity: number;
-      price: number;
+      ticker: string;
+      exchange: string;
+      interval: string;
+      closePrice: string;
+      openPrice: string;
+      lowPrice: string;
+      highPrice: string;
+      volume: string;
+      time: string;
+      positionSize: string;
+      orderAction: 'buy' | 'sell';
+      orderContracts: string;
+      orderPrice: string;
+      orderId: string;
+      orderComments: string;
+      orderMessage: string;
+      marketPosition: 'long' | 'short' | 'flat';
+      marketPositionSize: string;
+      prevMarketPosition: 'long' | 'short' | 'flat';
+      prevMarketPositionSize: string;
     };
-    const { symbol, side, quantity, price } = eventData;
 
-    // Place the trade via Tradovate WebSocket connection
+    const { ticker, exchange, orderAction, orderContracts, orderPrice } =
+      eventData;
+
     const orderResponse = await tradovate.placeOrder({
-      symbol,
-      side,
-      quantity,
-      price,
+      symbol: `${ticker}.${exchange}`,
+      side: orderAction,
+      quantity: parseInt(orderContracts, 10),
+      price: parseFloat(orderPrice),
     });
 
-    void reply
+    await reply
       .status(200)
       .send({ status: 'OK', orderId: orderResponse.orderId });
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Error handling trade event:', error);
-    void reply.status(500).send({ error: 'Error processing trade event' });
+    reply.log.error('Error handling trade event:', error);
+    await reply.status(500).send({ error: 'Error processing trade event' });
   }
 }
